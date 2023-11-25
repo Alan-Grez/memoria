@@ -34,6 +34,27 @@ def P_D(x1_barra: np.array, x2_barra: np.ndarray) -> tuple:
 
     return x1, x2
 
+def P_C_demanda(x2_barra: np.ndarray, x3_barra: np.ndarray, D: np.ndarray) -> tuple:
+    """
+        Input:
+            - x2_barra: np.array(NxM)
+            - x3_barra: np.array(1xM)
+            - D       : np.array(1xM) Término que simboliza la demanda
+        Output:
+            - tuple (x2,x3) (np.array,np.array)
+        Work:
+            The function give the point x2, x3 that are the 
+            projection of x2_barra, x3_barra over C.
+    """
+    N, M = x2_barra.shape
+    
+    diff = np.maximum(D-x3_barra - x2_barra.sum(axis=0),0)
+    scale_factor = ((N + 1) ** -1) 
+    
+    x2 = x2_barra + scale_factor * diff
+    x3 = x3_barra + scale_factor * diff
+    
+    return x2, x3
 
 def P_C(x2_barra: np.ndarray, x3_barra: np.ndarray) -> tuple:
     """
