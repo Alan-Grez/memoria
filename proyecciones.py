@@ -48,7 +48,7 @@ def P_C_demanda(x2_barra: np.ndarray, x3_barra: np.ndarray, D: np.ndarray) -> tu
     """
     N, M = x2_barra.shape
     
-    diff = np.maximum(D-x3_barra - x2_barra.sum(axis=0),0)
+    diff = np.maximum(D - x3_barra - x2_barra.sum(axis=0),0)
     scale_factor = ((N + 1) ** -1) 
     
     x2 = x2_barra + scale_factor * diff
@@ -112,10 +112,10 @@ def P_N(x1_N_barra, proba):
             non-anticipative linear space.
     """
     _, M = x1_N_barra.shape
-    return np.tile(np.matmul(x1_N_barra, proba[:,np.newaxis]),(1,M))
+    return np.tile(np.matmul(x1_N_barra, proba.T),(1,M))
 
 
-def P_CinterD(x1_N_barra : np.array, x2_barra : np.array, x2_barra_copy : np.array, x3_barra : np.array) -> tuple:
+def P_CinterD_demanda(x1_N_barra : np.array, x2_barra : np.array, x2_barra_copy : np.array, x3_barra : np.array, D: np.ndarray) -> tuple:
     """
         Input:
             - x1_N_barra:      np.array(MxN)
@@ -130,8 +130,8 @@ def P_CinterD(x1_N_barra : np.array, x2_barra : np.array, x2_barra_copy : np.arr
             intersection with D in combine with non-anticipative
             linear space.
     """
-    
-    return P_D_NA(x1_N_barra, x2_barra), P_C(x2_barra_copy, x3_barra)
+                        
+    return P_D_NA(x1_N_barra, x2_barra), P_C_demanda(x2_barra_copy, x3_barra, D)
 
 def P_N1(x1_N_barra, x2_barra, x2_barra_copy, proba):
     """
