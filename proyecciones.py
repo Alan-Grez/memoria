@@ -31,8 +31,10 @@ def P_D(x1_barra: np.array, x2_barra: np.ndarray) -> tuple:
     
     x1 = x1_barra + (scale_factor * diff.sum(axis = 1))[:,np.newaxis]
     x2 = x2_barra + np.where(x2_barra <= x1_barra, 0, (scale_factor * diff.sum(axis=1))[:,np.newaxis] -  diff)
-
-    return x1, x2
+    
+    lambda1 = diff - (scale_factor * diff.sum(axis=1))[:,np.newaxis]
+    
+    return x1, x2, lambda1
 
 def P_C_demanda(x2_barra: np.ndarray, x3_barra: np.ndarray, D: np.ndarray) -> tuple:
     """
@@ -48,13 +50,15 @@ def P_C_demanda(x2_barra: np.ndarray, x3_barra: np.ndarray, D: np.ndarray) -> tu
     """
     N, M = x2_barra.shape
     
-    diff = np.maximum(D - x3_barra - x2_barra.sum(axis=0),0)
+    diff = np.maximum(D-x3_barra - x2_barra.sum(axis=0),0)
     scale_factor = ((N + 1) ** -1) 
     
     x2 = x2_barra + scale_factor * diff
     x3 = x3_barra + scale_factor * diff
     
-    return x2, x3
+    lambda1 = scale_factor * diff
+    
+    return x2, x3, lambda1
 
 def P_C(x2_barra: np.ndarray, x3_barra: np.ndarray) -> tuple:
     """
@@ -95,7 +99,9 @@ def P_D_NA(x1_N_barra: np.array, x2_barra: np.array) -> tuple:
     x1 = x1_N_barra + 0.5 * diff
     x2 = x2_barra   - 0.5 * diff
     
-    return x1, x2
+    lambda1 = 0.5*diff
+    
+    return x1, x2, lambda1
 
 
 
