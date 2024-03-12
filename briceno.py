@@ -46,7 +46,7 @@ def Briceno_Arias_iteration(z1, z2, z2_copy, z3, gradient_of_g, P, gamma, lambda
     s3      = x3      - gamma*(g3 - y3)
     
     # Fourth step, pn = Pc\cap D sn
-    (p1, p2), (p2_copy, p3) = pro.P_CinterD_demanda(s1, s2, s2_copy, s3, D)
+    (p1, p2, lambda1), (p2_copy, p3, lambda2) = pro.P_CinterD_demanda(s1, s2, s2_copy, s3, D)
 
     
     # Last step, zn+1 = zn + lambdan* (pn - xn)
@@ -55,11 +55,11 @@ def Briceno_Arias_iteration(z1, z2, z2_copy, z3, gradient_of_g, P, gamma, lambda
     z2_copy_k = z2_copy + lambda_n * (p2_copy - x2_copy)
     z3_k      = z3      + lambda_n * (p3 - x3)
     
-    return (z1_k, z2_k, z2_copy_k, z3_k), (x1, x2, x2_copy, x3)
+    return (z1_k, z2_k, z2_copy_k, z3_k), (x1, x2, x2_copy, x3), (lambda1, lambda2)
 
 
 
-def Briceno_Arias(N, M, number_iteration, frobenius_norm_of_MC, Grad_Phi, P, D, gamma=1e-3, lambdan=1e-3):
+def Briceno_Arias(N, M, number_iteration, frobenius_norm_of_MC, Grad_Phi, P, D, sol_teo,gamma=1e-3, lambdan=1e-3):
 
     z1      = np.random.random((N,M))
     z2      = np.random.random((N,M))
@@ -70,11 +70,19 @@ def Briceno_Arias(N, M, number_iteration, frobenius_norm_of_MC, Grad_Phi, P, D, 
     beta = frobenius_norm_of_MC**(-1)
     #gamma = 2*beta*np.random.random(1)
     gamma = 2*beta*(0.65 + 0.35*np.random.random(1))
+    print("gamma:",gamma)
     alpha = np.maximum(2/3, (2*gamma)/(gamma+2*beta))
     
-    x_list = [] 
+    z_list = []
+    x_list = []
+    dual_l = []
     
-    for k in range(number_iteration):
+    i=0
+    Loss = 9e9
+
+    while Loss > 0.8e-4:
+
+    #for k in range(number_iteration):
         
         #lambda_n = (1/alpha)*np.random.random(1)/(k**0.25+2)
         #lambda_n = (1/alpha)
@@ -83,7 +91,10 @@ def Briceno_Arias(N, M, number_iteration, frobenius_norm_of_MC, Grad_Phi, P, D, 
         lambda_n = 0.95*(1/alpha)*np.random.random(1)+1
         #lambda_n =(1/alpha)*(0.75 + 0.5*np.random.random(1))
         
-        (z1_k, z2_k, z2_copy_k, z3_k), (x1, x2, x2_copy, x3) = Briceno_Arias_iteration(z1, z2, z2_copy, z3, Grad_Phi, P, gamma, lambda_n, D)
+        (z1_k, z2_k, z2_copy_k, z3_k), (x1, x2, x2_copy, x3), (lambda1, lambda2) = Briceno_Arias_iteration(z1, z2, z2_copy, z3, Grad_Phi, P, gamma, lambda_n, D)
+        
+        Loss = LA.norm(x1 - sol_teo[0]) + LA.norm(x2 - sol_teo[1]) + LA.norm(x3 - sol_teo[2])
+        Loss = Loss/(LA.norm(sol_teo[0])+ LA.norm(sol_teo[1]) + LA.norm(sol_teo[2]))
         
         a = "D_factible"      if (x2 <= x1).all()                      else "D_infactible"
         b = "C_factible"      if (x2_copy.sum(axis=0) + x3 >= D).all() else "C_infactible"
@@ -99,6 +110,9 @@ def Briceno_Arias(N, M, number_iteration, frobenius_norm_of_MC, Grad_Phi, P, D, 
 
         
         x_list.append(((x1, x2, x2_copy, x3), x_factible))
-
+        dual_l.append((lambda1/(2*gamma), lambda2/(2*gamma)))
+        z_list.append((z1_k, z2_k, z2_copy_k, z3_k))
         
-    return x_list
+        i+=1 
+        print("Iteration:",i,"Loss:",Loss)
+    return x_list, z_list, dual_l, i

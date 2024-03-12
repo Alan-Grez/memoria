@@ -64,17 +64,17 @@ def ADMM_iteration(decision, state, dual, phi_z1, phi_z2, phi_z3, P, D, e1, e2, 
     x2_k = c2 - (r**-1) * scale_factor_2 * tk
     x3_k = ((Q3+r)*c3+np.maximum(-s32*e32,0)*D)/(Q3+r+np.maximum(-s31*e31,0)+np.maximum(-s32*e32,0))
     
-    z1_k      = pro.P_N( y1 + x1_k, P)
-    z2_k,z3_k = pro.P_C_demanda(y2 + x2_k, y3 + x3_k, D)
+    z1_k               = pro.P_N( y1 + x1_k, P)
+    z2_k,z3_k, lambda1 = pro.P_C_demanda(y2 + x2_k, y3 + x3_k, D)
     
     y1_k = y1 + x1_k - z1_k
     y2_k = y2 + x2_k - z2_k
     y3_k = y3 + x3_k - z3_k
     
-    return (x1_k, x2_k, x3_k), (z1_k, z2_k, z3_k), (y1_k, y2_k, y3_k)
+    return (x1_k, x2_k, x3_k), (z1_k, z2_k, z3_k), (y1_k, y2_k, y3_k), (lambda1 * r/M)
 
 
-def ADMM(Number_iteration, N, M, phi1, phi2, phi3, Sigma, D, e1, e2, e31, e32):
+def ADMM(Number_iteration, N, M, phi1, phi2, phi3, Sigma, D, e1, e2, e31, e32, sol_teo):
     
     (Q1,B1) = phi1
     (Q2,B2) = phi2
@@ -92,13 +92,21 @@ def ADMM(Number_iteration, N, M, phi1, phi2, phi3, Sigma, D, e1, e2, e31, e32):
     y2     = np.zeros((N, M))
     y3     = np.zeros((1, M))
 
-    r=0.5e2*0.90741
+   
+    r=1.0e4
+    #r=1e-10
+    print("r:", r)
     
     ADMM_list = []
+    dual_list = []
     
-    for k in range(Number_iteration):
+    i = 0
+    Loss = 1.0e9
+    
+    while Loss > 0.8e-4:
+    #for k in range(Number_iteration):
        
-        (x1_k, x2_k, x3_k), (z1_k, z2_k,z3_k), (y1_k, y2_k, y3_k) = ADMM_iteration((x1, x2, x3), (z1, z2, z3), (y1, y2, y3), (Q1,B1), (Q2,B2), (Q3,B3), Sigma, D, e1, e2, e31, e32, r)
+        (x1_k, x2_k, x3_k), (z1_k, z2_k,z3_k), (y1_k, y2_k, y3_k), lambda1 = ADMM_iteration((x1, x2, x3), (z1, z2, z3), (y1, y2, y3), (Q1,B1), (Q2,B2), (Q3,B3), Sigma, D, e1, e2, e31, e32, r)
        
         x1 = x1_k
         x2 = x2_k
@@ -112,6 +120,8 @@ def ADMM(Number_iteration, N, M, phi1, phi2, phi3, Sigma, D, e1, e2, e31, e32):
         y2 = y2_k
         y3 = y3_k
         
+        Loss = LA.norm(x1_k - sol_teo[0]) + LA.norm(x2_k - sol_teo[1]) + LA.norm(x3_k - sol_teo[2])
+        Loss = Loss/(LA.norm(sol_teo[0])+ LA.norm(sol_teo[1]) + LA.norm(sol_teo[2]))
         
         a = "factible" if (x1 <= x2).all()                     else "infactible"
         b = "factible" if (x2.sum(axis=0) + x3 >= D).all()     else "infactible"
@@ -120,5 +130,8 @@ def ADMM(Number_iteration, N, M, phi1, phi2, phi3, Sigma, D, e1, e2, e31, e32):
         x = "factible" if all(cond == "factible" for cond in [a, b, d]) else "infactible"
             
         ADMM_list.append(((x1, x2, x3), (z1, z2, z3), (y1, y2, y3), x))
+        dual_list.append(lambda1)
         
-    return ADMM_list
+        i+=1
+        print("Iteration:",i,"Loss:",Loss)
+    return ADMM_list, dual_list, i
